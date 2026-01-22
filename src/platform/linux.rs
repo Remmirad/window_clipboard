@@ -43,6 +43,37 @@ impl ClipboardProvider for wayland::Clipboard {
         self.read()
     }
 
+    fn read_content(&self) -> Result<crate::ClipboardContent, Box<dyn Error>> {
+        let c = self.read_content()?;
+        Ok(match c.data {
+            wayland::ClipboardData::String(s) => {
+                crate::ClipboardContent::String(s)
+            }
+            wayland::ClipboardData::Paths(path_bufs) => {
+                crate::ClipboardContent::Paths(path_bufs)
+            }
+            wayland::ClipboardData::Cbor(data) => {
+                crate::ClipboardContent::Cbor(data)
+            }
+            wayland::ClipboardData::Image(data)
+                if c.mime == wayland::MimeType::ImageBmp =>
+            {
+                crate::ClipboardContent::BmpImage(data)
+            }
+            wayland::ClipboardData::Image(data)
+                if c.mime == wayland::MimeType::ImagePng =>
+            {
+                crate::ClipboardContent::PngImage(data)
+            }
+            wayland::ClipboardData::Image(data)
+                if c.mime == wayland::MimeType::ImageJpeg =>
+            {
+                crate::ClipboardContent::JpegImage(data)
+            }
+            _ => return Err("Unknown image format".into()),
+        })
+    }
+
     fn read_primary(&self) -> Option<Result<String, Box<dyn Error>>> {
         Some(self.read_primary())
     }
@@ -51,7 +82,51 @@ impl ClipboardProvider for wayland::Clipboard {
         self.write(contents)
     }
 
-    fn write_primary(&mut self, contents: String) -> Option<Result<(), Box<dyn Error>>> {
+    fn write_content(
+        &mut self,
+        contents: crate::ClipboardContent,
+    ) -> Result<(), Box<dyn Error>> {
+        let content = match contents {
+            crate::ClipboardContent::String(s) => wayland::ClipboardContent {
+                mime: wayland::MimeType::Utf8String,
+                data: wayland::ClipboardData::String(s),
+            },
+            crate::ClipboardContent::Paths(path_bufs) => {
+                wayland::ClipboardContent {
+                    mime: wayland::MimeType::TextUriList,
+                    data: wayland::ClipboardData::Paths(path_bufs),
+                }
+            }
+            crate::ClipboardContent::Cbor(data) => wayland::ClipboardContent {
+                mime: wayland::MimeType::ApplicationCbor,
+                data: wayland::ClipboardData::Cbor(data),
+            },
+            crate::ClipboardContent::BmpImage(img) => {
+                wayland::ClipboardContent {
+                    mime: wayland::MimeType::ImageBmp,
+                    data: wayland::ClipboardData::Image(img),
+                }
+            }
+            crate::ClipboardContent::PngImage(img) => {
+                wayland::ClipboardContent {
+                    mime: wayland::MimeType::ImagePng,
+                    data: wayland::ClipboardData::Image(img),
+                }
+            }
+            crate::ClipboardContent::JpegImage(img) => {
+                wayland::ClipboardContent {
+                    mime: wayland::MimeType::ImageJpeg,
+                    data: wayland::ClipboardData::Image(img),
+                }
+            }
+        };
+        self.write_content(content)
+    }
+
+    fn write_primary(
+        &mut self,
+        contents: String,
+    ) -> Option<Result<(), Box<dyn Error>>> {
         Some(self.write_primary(contents))
     }
 }
@@ -70,7 +145,10 @@ impl ClipboardProvider for x11::Clipboard {
         self.write(contents).map_err(Box::from)
     }
 
-    fn write_primary(&mut self, contents: String) -> Option<Result<(), Box<dyn Error>>> {
+    fn write_primary(
+        &mut self,
+        contents: String,
+    ) -> Option<Result<(), Box<dyn Error>>> {
         Some(self.write_primary(contents).map_err(Box::from))
     }
 }

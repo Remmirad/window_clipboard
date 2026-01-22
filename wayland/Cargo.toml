@@ -10,4 +10,5 @@ documentation = "https://docs.rs/clipboard_wayland"
 keywords = ["clipboard", "wayland"]
 
 [dependencies]
-smithay-clipboard = "0.7"
+# smithay-clipboard = "0.7"
+smithay-clipboard = {path = "../../smithay-clipboard"}

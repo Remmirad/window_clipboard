@@ -12,9 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::error::Error;
-use std::ffi::c_void;
-use std::sync::{Arc, Mutex};
+use std::{
+    error::Error,
+    ffi::c_void,
+    sync::{Arc, Mutex},
+};
+
+pub use smithay_clipboard::{ClipboardContent, ClipboardData, MimeType};
 
 pub struct Clipboard {
     context: Arc<Mutex<smithay_clipboard::Clipboard>>,
@@ -33,6 +37,10 @@ impl Clipboard {
         Ok(self.context.lock().unwrap().load()?)
     }
 
+    pub fn read_content(&self) -> Result<ClipboardContent, Box<dyn Error>> {
+        Ok(self.context.lock().unwrap().load_content()?)
+    }
+
     pub fn read_primary(&self) -> Result<String, Box<dyn Error>> {
         Ok(self.context.lock().unwrap().load_primary()?)
     }
@@ -43,7 +51,19 @@ impl Clipboard {
         Ok(())
     }
 
-    pub fn write_primary(&mut self, data: String) -> Result<(), Box<dyn Error>> {
+    pub fn write_content(
+        &mut self,
+        data: ClipboardContent,
+    ) -> Result<(), Box<dyn Error>> {
+        self.context.lock().unwrap().store_content(data);
+
+        Ok(())
+    }
+
+    pub fn write_primary(
+        &mut self,
+        data: String,
+    ) -> Result<(), Box<dyn Error>> {
         self.context.lock().unwrap().store_primary(data);
 
         Ok(())
