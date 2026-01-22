@@ -11,4 +11,5 @@ keywords = ["clipboard", "wayland"]
 
 [dependencies]
 # smithay-clipboard = "0.7"
-smithay-clipboard = {path = "../../smithay-clipboard"}
+# smithay-clipboard = {path = "../../smithay-clipboard"}
+smithay-clipboard = { git ="https://github.com/Remmirad/smithay-clipboard.git",branch="pixler_dev"}
